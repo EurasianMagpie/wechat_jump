@@ -50,6 +50,8 @@ def jump_to_next_target():
     cap_next()
     s_path = "%s\\%s" % (shot_path_pc, s_cur)
     delta = ia.ia(s_path)
+    if delta < 185:
+        delta = 185
     ms = delta * r
     print "press %s ms" % ms
     jump(ms)
@@ -58,5 +60,5 @@ if __name__ == "__main__":
     #jump_to_next_target()
     while (True):
         jump_to_next_target()
-        time.sleep(1)
+        time.sleep(1.5)
     

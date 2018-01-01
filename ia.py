@@ -11,9 +11,14 @@ pending_top = 300
 pending_bottom = 200
 pending_h = 50
 
-# 我的棋子顶部像素颜色分部
+# 背景色范围阈值
+bgt = 18
+
+# 我的棋子像素颜色分布
+px_me_0 = (46, 46, 50)
 px_me_1 = (51, 51, 55)
 px_me_2 = (53, 54, 60)
+px_me_3 = (153, 143, 183)
 
 def px_in_range(px, px1, px2):
     for i in range(0, 3):
@@ -23,7 +28,7 @@ def px_in_range(px, px1, px2):
             return False
     return True
 
-def px_is_me(px):
+def px_is_my_head(px):
     for i in range(0, 3):
         if (px_me_1[i] <= px[i] and px[i] <= px_me_2[i]):
             continue
@@ -31,16 +36,30 @@ def px_is_me(px):
             return False
     return px[2] > px[0] and px[2] > px[1]
 
+def px_is_not_me(px):
+    return not px_in_range(px, px_me_0, px_me_3)
+    
+
+def px_is_target(px, bg1, bg2):
+    #return (not px_in_range(px, bg1, bg2)) and px_is_not_me(px)
+    return not px_in_range(px, bg1, bg2)
+
 # 因为目标的在左上或右上的角度的是固定的,简单认为是常亮,
 # 所以计算跳跃按压时间仅以目标与自己位置的水平距离差做唯一变量
 # 找到目标的水平中心位置,找到自己的水平中心位置,并计算下一次的水平相对距离
 def calc_gap(im):
     w = im.size[0]
     h = im.size[1]
-    px_begin = im.getpixel((pending_h, pending_top))
+    #背景色提取
+    px_1 = im.getpixel((pending_h, pending_top))
+    #px_2 = im.getpixel((w - pending_h, h - pending_bottom))
+    #px_begin = ((min(px_1[0], px_2[0])-15), (min(px_1[1], px_2[1])-15), (min(px_1[2], px_2[2])-15))
+    #px_end = ((max(px_1[0], px_2[0])+15), (max(px_1[1], px_2[1])+15), (max(px_1[2], px_2[2])+15))
+    px_begin = (px_1[0]-bgt, px_1[1]-bgt, px_1[2]-bgt)
+    px_end = (px_1[0]+bgt, px_1[1]+bgt, px_1[2]+bgt)
     print "bg px begin : ", px_begin
-    px_end = im.getpixel((w - pending_h, h - pending_bottom))
     print "bg px end : ", px_end
+    
     # 找到目标
     top_1 = (0,0)
     top_2 = (0,0)
@@ -50,7 +69,7 @@ def calc_gap(im):
             break;
         for j in range(pending_h, w - pending_h):
             px = im.getpixel((j, i))
-            if not px_in_range(px, px_begin, px_end):
+            if px_is_target(px, px_begin, px_end):
                 top_2 = top_1 = (j, i)
                 find_top = True
                 break
@@ -59,7 +78,7 @@ def calc_gap(im):
         return 0
     for i in range(top_1[0]+1, w - pending_h):
         px = im.getpixel((i, top_1[1]))
-        if not px_in_range(px, px_begin, px_end):
+        if px_is_target(px, px_begin, px_end):
             top_2 = (i, top_1[1])
         else:
             break
@@ -81,8 +100,8 @@ def calc_gap(im):
             break;
         for j in range(pending_h, w - pending_h):
             px = im.getpixel((j, i))
-            if px_is_me(px):
-                if px_is_me(im.getpixel((j+1, i))) and px_is_me(im.getpixel((j+3, i))):
+            if px_is_my_head(px):
+                if px_is_my_head(im.getpixel((j+1, i))) and px_is_my_head(im.getpixel((j+3, i))):
                     me_top_2 = me_top_1 = (j, i)
                     find_me = True
                     break
@@ -91,7 +110,7 @@ def calc_gap(im):
         return 0
     for i in range(me_top_1[0]+1, w - pending_h):
         px = im.getpixel((i, me_top_1[1]))
-        if px_is_me(px):
+        if px_is_my_head(px):
             me_top_2 = (i, me_top_1[1])
         else:
             break
